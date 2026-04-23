@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Injectable,
@@ -5,9 +8,10 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Profile } from 'src/entity/profile.entity';
 import { QueryProfilesDto } from 'src/dto/query.profile.dto';
+import { uuidv7 } from 'uuidv7';
 import { NlpParserService } from 'src/nlp/nlp.service';
 
 @Injectable()
@@ -16,7 +20,49 @@ export class ProfilesService {
     @InjectRepository(Profile)
     private readonly profileRepo: Repository<Profile>,
     private readonly nlpParser: NlpParserService,
+    private readonly dataSource: DataSource,
   ) {}
+
+  async bulkUpsert(profiles: any[]): Promise<number> {
+    if (!profiles.length) return 0;
+
+    function getAgeGroup(age: number): string {
+      if (age <= 12) return 'child';
+      if (age <= 17) return 'teenager';
+      if (age <= 64) return 'adult';
+      return 'senior';
+    }
+
+    const chunkSize = 100;
+    for (let i = 0; i < profiles.length; i += chunkSize) {
+      const chunk = profiles.slice(i, i + chunkSize);
+      const entities = chunk.map((p: any) => ({
+        id: p.id || uuidv7(),
+        name: (p.name ?? '').toLowerCase(),
+        gender: p.gender ?? '',
+        gender_probability: p.gender_probability ?? p.genderProbability ?? 0,
+        age: p.age ?? 0,
+        age_group: p.age_group ?? p.ageGroup ?? getAgeGroup(p.age ?? 0),
+        country_id: p.country_id ?? p.countryId ?? p.country?.id ?? '',
+        country_name: p.country_name ?? p.countryName ?? p.country?.name ?? '',
+        country_probability:
+          p.country_probability ??
+          p.countryProbability ??
+          p.country?.probability ??
+          0,
+      }));
+
+      await this.dataSource
+        .createQueryBuilder()
+        .insert()
+        .into(Profile)
+        .values(entities)
+        .orIgnore()
+        .execute();
+    }
+
+    return profiles.length;
+  }
 
   async findAll(dto: QueryProfilesDto) {
     const page = dto.page ?? 1;
@@ -60,7 +106,6 @@ export class ProfilesService {
 
     qb.skip((page - 1) * limit).take(limit);
 
-    // Run both queries concurrently for performance
     const [data, total] = await qb.getManyAndCount();
 
     return { page, limit, total, data };
