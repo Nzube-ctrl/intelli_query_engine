@@ -40,6 +40,7 @@ async function main() {
   await dataSource.initialize();
   console.log('Database connected.');
 
+  // Ensure table exists
   await dataSource.synchronize();
 
   const filePath =
@@ -52,7 +53,10 @@ async function main() {
   }
 
   const raw = fs.readFileSync(filePath, 'utf-8');
-  const profiles: any[] = JSON.parse(raw);
+  const parsed = JSON.parse(raw);
+  const profiles: any[] = Array.isArray(parsed)
+    ? parsed
+    : (parsed.profiles ?? []);
 
   console.log(`Seeding ${profiles.length} profiles...`);
 

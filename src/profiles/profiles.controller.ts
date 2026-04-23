@@ -30,8 +30,15 @@ export class ProfilesController {
       return { status: 'error', message: 'Missing body' };
     }
     try {
-      const profiles = Array.isArray(body) ? body : [body];
-      const result = await this.profilesService.bulkUpsert(profiles);
+      let input: any[];
+      if (Array.isArray(body)) {
+        input = body;
+      } else if (body.profiles && Array.isArray(body.profiles)) {
+        input = body.profiles;
+      } else {
+        input = [body];
+      }
+      const result = await this.profilesService.bulkUpsert(input);
       return { status: 'success', inserted: result };
     } catch (err) {
       return { status: 'error', message: err.message || 'Server error' };

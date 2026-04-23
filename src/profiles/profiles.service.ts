@@ -20,10 +20,12 @@ export class ProfilesService {
     @InjectRepository(Profile)
     private readonly profileRepo: Repository<Profile>,
     private readonly nlpParser: NlpParserService,
-    private readonly dataSource: DataSource,
   ) {}
 
-  async bulkUpsert(profiles: any[]): Promise<number> {
+  async bulkUpsert(input: any[]): Promise<number> {
+    const profiles: any[] = Array.isArray(input)
+      ? input
+      : ((input as any).profiles ?? []);
     if (!profiles.length) return 0;
 
     function getAgeGroup(age: number): string {
@@ -50,9 +52,10 @@ export class ProfilesService {
           p.countryProbability ??
           p.country?.probability ??
           0,
+        created_at: new Date(),
       }));
 
-      await this.dataSource
+      await this.profileRepo
         .createQueryBuilder()
         .insert()
         .into(Profile)
@@ -63,6 +66,50 @@ export class ProfilesService {
 
     return profiles.length;
   }
+
+  // async bulkUpsert(input: any[]): Promise<number> {
+  //   const profiles: any[] = Array.isArray(input)
+  //     ? input
+  //     : ((input as any).profiles ?? []);
+  //   if (!profiles.length) return 0;
+
+  //   function getAgeGroup(age: number): string {
+  //     if (age <= 12) return 'child';
+  //     if (age <= 17) return 'teenager';
+  //     if (age <= 64) return 'adult';
+  //     return 'senior';
+  //   }
+
+  //   const chunkSize = 100;
+  //   for (let i = 0; i < profiles.length; i += chunkSize) {
+  //     const chunk = profiles.slice(i, i + chunkSize);
+  //     const entities = chunk.map((p: any) => ({
+  //       id: p.id || uuidv7(),
+  //       name: (p.name ?? '').toLowerCase(),
+  //       gender: p.gender ?? '',
+  //       gender_probability: p.gender_probability ?? p.genderProbability ?? 0,
+  //       age: p.age ?? 0,
+  //       age_group: p.age_group ?? p.ageGroup ?? getAgeGroup(p.age ?? 0),
+  //       country_id: p.country_id ?? p.countryId ?? p.country?.id ?? '',
+  //       country_name: p.country_name ?? p.countryName ?? p.country?.name ?? '',
+  //       country_probability:
+  //         p.country_probability ??
+  //         p.countryProbability ??
+  //         p.country?.probability ??
+  //         0,
+  //     }));
+
+  //     await this.dataSource
+  //       .createQueryBuilder()
+  //       .insert()
+  //       .into(Profile)
+  //       .values(entities)
+  //       .orIgnore()
+  //       .execute();
+  //   }
+
+  //   return profiles.length;
+  // }
 
   async findAll(dto: QueryProfilesDto) {
     const page = dto.page ?? 1;
