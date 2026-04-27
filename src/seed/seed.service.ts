@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
@@ -45,7 +41,6 @@ export class SeedService {
 
     const chunkSize = 100;
     let inserted = 0;
-    // eslint-disable-next-line prefer-const
     let skipped = 0;
 
     for (let i = 0; i < profiles.length; i += chunkSize) {
