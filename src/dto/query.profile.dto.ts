@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { IsOptional, IsIn, IsInt, IsString, Min, Max } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
@@ -40,7 +38,6 @@ export class QueryProfilesDto {
   @Max(1)
   min_country_probability?: number;
 
-  // Sorting
   @IsOptional()
   @IsIn(['age', 'created_at', 'gender_probability'])
   sort_by?: string;

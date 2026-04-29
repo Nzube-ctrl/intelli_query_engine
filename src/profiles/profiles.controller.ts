@@ -14,11 +14,17 @@ import { ProfilesService } from './profiles.service';
 import { QueryProfilesDto } from 'src/dto/query.profile.dto';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from 'src/auth/guards/jwt.auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('api/profiles')
 export class ProfilesController {
   constructor(private readonly profilesService: ProfilesService) {}
 
+  @Roles('admin')
   @Post()
   @HttpCode(201)
   async create(@Body() body: any) {
